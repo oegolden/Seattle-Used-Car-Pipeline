@@ -1,0 +1,11 @@
+# Astro Runtime includes the following pre-installed providers packages: https://www.astronomer.io/docs/astro/runtime-image-architecture#provider-packages
+selenium==4.29.0
+pyodbc
+fastapi
+uvicorn[standard]
+pydantic
+azure-identity
+bs4
+scikit-learn
+apache-airflow-providers-common-compat
+apache-airflow-providers-apache-spark
