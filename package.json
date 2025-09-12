@@ -1,18 +1,20 @@
 {
-  "name": "seattle-used-car-pipeline",
+  "name": "my-astro-app",
   "version": "1.0.0",
-  "description": "Seattle Used Car Analytics Data Foundation Project",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "start": "node index.js"
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "lint": "eslint ."
   },
-  "author": "OGgol",
-  "license": "ISC",
   "dependencies": {
-    "axios": "^1.4.0",
-    "cheerio": "^1.0.0-rc.12"
+    "astro": "^4.0.0" 
   },
-"engines": {
+  "devDependencies": {
+    "eslint": "^9.0.0"
+  },
+  "engines":{
     "node": ">=18.0.0"
   }
 }
