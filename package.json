@@ -8,13 +8,11 @@
     "preview": "astro preview",
     "lint": "eslint ."
   },
-  "dependencies": {
-    "astro": "^4.0.0" 
-  },
   "devDependencies": {
+    "astro": "^5.13.7",
     "eslint": "^9.0.0"
   },
-  "engines":{
+  "engines": {
     "node": ">=18.0.0"
   }
 }
