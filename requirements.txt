@@ -8,4 +8,8 @@ azure-identity
 bs4
 scikit-learn
 apache-airflow-providers-common-compat
+apache-airflow-providers-common-sql
+apache-airflow-providers-microsoft-mssql
+apache-airflow-providers-odbc
 apache-airflow-providers-apache-spark
+fake-useragent

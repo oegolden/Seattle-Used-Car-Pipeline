@@ -16,4 +16,7 @@ RUN apt update && \
 ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-amd64/
 RUN export JAVA_HOME
 
+RUN mkdir -p /opt/spark/jars && \
+    curl -L -o /opt/spark/jars/mssql-jdbc-12.2.0.jre8.jar https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/12.2.0.jre8/mssql-jdbc-12.2.0.jre8.jar
+
 USER astro
