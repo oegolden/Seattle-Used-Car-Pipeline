@@ -49,7 +49,7 @@ def mssql_to_spark_etl():
 
     load_data = SparkSubmitOperator(
         task_id="load_data_from_mssql",
-        application="./include/scripts/mssql_to_spark.py",
+        application="/usr/local/airflow/include/scripts/mssql_to_spark.py",
         conn_id="car_db_spark",
         application_args=[
             "{{ ti.xcom_pull(task_ids='get_mssql_conn_info')['jdbc_url'] }}",
