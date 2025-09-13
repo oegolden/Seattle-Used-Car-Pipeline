@@ -1,210 +1,124 @@
 # Used Car Data Pipeline
 
-This repository contains an Apache Airflow-based ETL pipeline for collecting, processing, and analyzing used car data from multiple sources. The pipeline consists of three main DAGs that work together to scrape, store, and transform data for analytics purposes.
+This repository contains an Apache Airflow-based ETL pipeline for collecting, processing, and analyzing used car data from multiple sources. The pipeline is deployed and running on Astronomer, providing automated data collection and processing for used car market analysis.
+
+## Project Overview
+
+The pipeline follows a three-stage architecture designed to collect comprehensive used car market data from the Seattle area. It combines listing data from Cars.com with dealer information from DealerRater.com, then processes the data through Apache Spark for analytics-ready output.
+
+### Business Value
+- **Market Intelligence**: Tracks used car pricing trends and inventory levels
+- **Dealer Analysis**: Monitors dealer performance, ratings, and service offerings
+- **Data-Driven Insights**: Provides clean, structured data for business intelligence and reporting
+- **Automated Collection**: Reduces manual data gathering efforts with scheduled automation
 
 ## Architecture Overview
 
-The pipeline follows a three-stage architecture:
+The pipeline consists of three interconnected DAGs that work together to create a comprehensive used car data warehouse:
 
-1. **Raw Data Collection** (`raw_car_dag.py`) - Scrapes used car listings from Cars.com
-2. **Dealer Data Collection** (`dealer_dag.py`) - Scrapes dealer information and reviews from DealerRater.com
-3. **Data Processing** (`cleand_car_dag.py`) - Transforms and cleans the collected data using Apache Spark
+1. **Raw Data Collection** - Captures current used car listings
+2. **Dealer Intelligence** - Gathers dealer profiles and customer feedback
+3. **Data Processing** - Transforms raw data into analytics-ready format
 
-## DAG Descriptions
+## Data Sources and Collection
 
-### 1. Raw Car Data DAG (`insert_raw_car_dag`)
-- **Schedule**: Daily (`@daily`)
-- **Purpose**: Scrapes used car listings from Cars.com for the Seattle area (ZIP: 98104)
-- **Data Collected**: Car name, dealer, price, mileage, and listing URL
-- **Target Table**: `dbo.raw_car_data`
+### Cars.com Integration
+- **Target Market**: Seattle area (ZIP: 98104)
+- **Data Scope**: Up to 50 used car listings per daily run
+- **Information Captured**: Vehicle details, pricing, mileage, dealer information, and listing URLs
+- **Update Frequency**: Daily collection ensures current market data
 
-**Key Features:**
-- Scrapes up to 50 listings per run
-- Uses MERGE statements to handle duplicate entries
-- Implements retry logic with exponential backoff
-- Automatically triggers the cleaning DAG upon completion
+### DealerRater.com Integration  
+- **Coverage Area**: Seattle region (98109)
+- **Focus**: Used car dealerships with customer ratings ≥1.0
+- **Data Points**: Dealer names, descriptions, locations, customer ratings, amenities, and profile links
+- **Update Frequency**: Weekly collection captures dealer profile changes
 
-### 2. Dealer Data DAG (`insert_dealer_dag`)
-- **Schedule**: Weekly (`@weekly`)
-- **Purpose**: Collects dealer information and reviews from DealerRater.com
-- **Data Collected**: Dealer name, description, location, rating score, amenities, and profile URL
-- **Target Table**: `dbo.dealers`
+## DAG Architecture
 
-**Key Features:**
-- Focuses on used car dealers in Seattle area (98109)
-- Stores amenities as JSON data
-- Implements rate limiting to respect website policies
-- Includes error handling for failed scraping attempts
-
-### 3. Clean Car Data DAG (`clean_car_dag`)
-- **Schedule**: Daily (`@daily`)
-- **Purpose**: Processes raw car data using Apache Spark for analytics
-- **Data Source**: `dbo.used_cars` table
-- **Processing**: ETL operations using Spark for data transformation and cleaning
+### Raw Car Data Collection (`insert_raw_car_dag`)
+**Purpose**: Primary data collection from Cars.com for current market listings
 
 **Key Features:**
-- Integrates with Apache Spark for large-scale data processing
-- Secure connection handling through Airflow connections
-- Configurable Spark settings for optimal performance
+- Daily execution schedule aligned with market activity
+- Intelligent duplicate handling using MERGE operations
+- Automatic triggering of downstream processing
+- Robust error handling with retry mechanisms
 
-## Prerequisites
+**Data Output**: Populated `raw_car_data` table with current inventory
 
-### Software Requirements
-- Apache Airflow 2.x
-- Apache Spark (configured with Airflow)
-- Microsoft SQL Server
-- Python 3.8+
+### Dealer Data Collection (`insert_dealer_dag`)
+**Purpose**: Comprehensive dealer profile and reputation data gathering
 
-### Python Dependencies
-```bash
-pip install apache-airflow
-pip install apache-airflow-providers-apache-spark
-pip install apache-airflow-providers-microsoft-mssql
-pip install requests
-pip install beautifulsoup4
-pip install fake-useragent
-pip install pendulum
-```
+**Key Features:**
+- Weekly scheduling optimized for dealer profile update frequency
+- JSON storage for flexible amenity data
+- Rate-limited scraping to maintain website relationships
+- Comprehensive error logging for data quality assurance
 
-### Additional Requirements
-- MS SQL JDBC Driver: `mssql-jdbc-12.2.0.jre8.jar` (should be placed in `/opt/spark/jars/`)
-- Spark application script: `./include/scripts/mssql_to_spark.py`
+**Data Output**: Populated `dealers` table with current dealer information
 
-## Configuration
+### Data Processing Pipeline (`clean_car_dag`)
+**Purpose**: Transform raw collected data into analytics-ready format using Apache Spark
 
-### 1. Airflow Connections
+**Key Features:**
+- Spark-based processing for scalable data transformation
+- Secure connection management through Airflow
+- Daily processing ensures fresh analytical data
+- Optimized for large-scale data operations
 
-Create the following connections in Airflow:
+**Data Output**: Processed `used_cars` table ready for business intelligence tools
 
-**Database Connection (`car_db`)**
-- Connection Type: Microsoft SQL Server
-- Host: Your SQL Server host
-- Database: Your database name
-- Login: Database username
-- Password: Database password
-- Port: 1433 (or your custom port)
-
-**Spark Connection (`car_db_spark`)**
-- Connection Type: Spark
-- Host: Your Spark master URL
-- Extra: Additional Spark configuration as JSON
-
-### 2. Database Schema
-
-Ensure the following tables exist in your SQL Server database:
-
-```sql
--- Raw car data table
-CREATE TABLE dbo.raw_car_data (
-    car_name NVARCHAR(255),
-    dealer NVARCHAR(255),
-    price INT,
-    mileage INT,
-    car_link NVARCHAR(500) PRIMARY KEY
-);
-
--- Dealers table
-CREATE TABLE dbo.dealers (
-    title NVARCHAR(255),
-    description NTEXT,
-    location NVARCHAR(255),
-    score FLOAT,
-    amenities NTEXT, -- JSON data
-    link NVARCHAR(500) PRIMARY KEY
-);
-
--- Used cars table (for processed data)
-CREATE TABLE dbo.used_cars (
-    -- Define columns based on your Spark processing requirements
-);
-```
-
-### 3. Directory Structure
-```
-project/
-├── dags/
-│   ├── raw_car_dag.py
-│   ├── dealer_dag.py
-│   └── cleand_car_dag.py
-└── include/
-    └── scripts/
-        └── mssql_to_spark.py
-```
-
-## Usage
-
-1. **Deploy the DAGs** to your Airflow DAGs folder
-2. **Configure connections** in the Airflow UI
-3. **Enable the DAGs** in the Airflow interface
-4. **Monitor execution** through the Airflow web interface
-
-### Manual Triggering
-You can manually trigger any DAG through the Airflow UI or using the CLI:
-```bash
-airflow dags trigger insert_raw_car_dag
-airflow dags trigger insert_dealer_dag
-airflow dags trigger clean_car_dag
-```
-
-## Data Flow
+## Data Flow and Dependencies
 
 ```
-Cars.com → Raw Car DAG → SQL Server (raw_car_data)
-                           ↓
-                    Clean Car DAG → Spark Processing → SQL Server (used_cars)
-
-DealerRater.com → Dealer DAG → SQL Server (dealers)
+Daily: Cars.com → Raw Car Collection → Spark Processing → Analytics Tables
+Weekly: DealerRater.com → Dealer Collection → Dealer Intelligence Tables
 ```
 
-## Monitoring and Maintenance
+The raw car collection automatically triggers the cleaning process, ensuring that newly collected data is immediately processed and available for analysis.
 
-### Key Metrics to Monitor
-- DAG success/failure rates
-- Scraping success rates
-- Data quality metrics
-- Processing times
+## Technical Implementation
 
-### Common Issues
-- **Website blocking**: Implement proper rate limiting and user agent rotation
-- **Network timeouts**: Adjust retry settings and delays
-- **Data quality**: Monitor for missing or malformed data
-- **Database locks**: Ensure proper transaction handling
+### Data Storage Strategy
+- **Microsoft SQL Server**: Central data warehouse for all collected information
+- **Incremental Loading**: Efficient processing of only new and updated records
+- **Data Integrity**: MERGE operations prevent duplicates while capturing updates
 
-## Best Practices
+### Processing Architecture  
+- **Apache Spark Integration**: Handles large-scale data transformations
+- **Airflow Orchestration**: Manages complex dependencies and retry logic
+- **Astronomer Platform**: Provides enterprise-grade pipeline management and monitoring
 
-1. **Rate Limiting**: Respect website rate limits to avoid being blocked
-2. **Error Handling**: Implement comprehensive error handling and retry logic
-3. **Data Validation**: Validate scraped data before insertion
-4. **Monitoring**: Set up alerts for failed DAG runs
-5. **Resource Management**: Monitor Spark resource usage and adjust configurations
+### Data Quality Measures
+- **Validation**: Input data validation before database insertion
+- **Error Handling**: Comprehensive logging and retry mechanisms
+- **Monitoring**: Built-in pipeline health monitoring through Astronomer
 
-## Security Considerations
+## Project Structure
 
-- Store database credentials securely using Airflow Connections
-- Use environment variables for sensitive configuration
-- Implement proper access controls on the database
-- Regular security updates for all dependencies
+The pipeline is organized into three main components:
+- **Collection DAGs**: Handle web scraping and initial data capture
+- **Processing DAGs**: Transform and clean collected data
+- **Support Scripts**: Spark applications for data processing operations
 
-## Contributing
+## Data Applications
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests where appropriate
-5. Submit a pull request
+The collected and processed data supports various analytical use cases:
 
-## License
+- **Price Analysis**: Track pricing trends across different vehicle types and dealers
+- **Market Inventory**: Monitor available inventory levels and turnover rates  
+- **Dealer Performance**: Analyze dealer ratings, customer satisfaction, and service quality
+- **Market Intelligence**: Generate insights on market dynamics and opportunities
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## Pipeline Benefits
 
-## Support
-
-For issues and questions:
-1. Check the Airflow logs for detailed error messages
-2. Verify database connectivity and permissions
-3. Ensure all required dependencies are installed
-4. Review the DAG configuration and connections
+**Automation**: Eliminates manual data collection efforts while ensuring data freshness
+**Scalability**: Spark-based processing handles growing data volumes efficiently  
+**Reliability**: Astronomer platform provides enterprise-grade uptime and monitoring
+**Flexibility**: Modular design allows easy extension to additional data sources
+**Data Quality**: Built-in validation and error handling ensures reliable data output
 
 ---
 
-**Note**: This pipeline is designed for educational and research purposes. Always ensure compliance with website terms of service and applicable data protection regulations when scraping data.
+This pipeline represents a comprehensive solution for used car market data intelligence, combining automated data collection, robust processing, and enterprise-grade deployment on the Astronomer platform.
